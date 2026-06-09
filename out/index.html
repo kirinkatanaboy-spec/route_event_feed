@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>全国イベント × タクシー需要マップ</title>
+<!-- AdSense: 独自価値（タクシー需要分析）が育ってから申請・設置する -->
+<style>
+  :root { --bg:#13131f; --card:#1e1e30; --sec:#252538; --amber:#ffc107; --fg:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+         font-family:-apple-system,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif; }
+  header { padding:16px; background:var(--card); position:sticky; top:0; z-index:10;
+            border-bottom:1px solid var(--sec); }
+  header h1 { margin:0; font-size:18px; }
+  header .meta { color:#9a9ab0; font-size:12px; margin-top:4px; }
+  .filters { display:flex; gap:8px; flex-wrap:wrap; padding:12px 16px; }
+  .filters button { background:var(--sec); color:var(--fg); border:none; border-radius:16px;
+                     padding:6px 14px; font-size:13px; cursor:pointer; }
+  .filters button.on { background:var(--amber); color:#000; font-weight:700; }
+  main { padding:0 16px 40px; }
+  .day { margin-top:18px; }
+  .day h2 { font-size:14px; color:var(--amber); margin:0 0 8px;
+             border-bottom:1px solid var(--sec); padding-bottom:4px; }
+  .ev { background:var(--card); border-radius:10px; padding:12px 14px; margin-bottom:8px;
+         display:flex; justify-content:space-between; gap:12px; align-items:center; }
+  .ev .t { font-size:14px; font-weight:600; }
+  .ev .v { font-size:12px; color:#9a9ab0; margin-top:2px; }
+  .ev .time { font-size:13px; color:var(--amber); white-space:nowrap; }
+  .ev a { color:#6ab0ff; font-size:12px; text-decoration:none; }
+  .badge { font-size:11px; padding:2px 8px; border-radius:10px; margin-right:6px; }
+  .g-concert { background:#5a2a6a; } .g-sports { background:#1b5e20; }
+  .g-exhibition { background:#b26a00; } .g-other { background:#3a3a55; }
+  .empty { color:#9a9ab0; padding:40px 0; text-align:center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>全国イベント × タクシー需要マップ</h1>
+  <div class="meta">会場公式サイトの公開情報を集約・更新: <span id="gen"></span></div>
+</header>
+<div class="filters" id="filters"></div>
+<main id="list"><div class="empty">読み込み中...</div></main>
+<script>
+const GENRE_LABEL = {concert:"ライブ", sports:"スポーツ", exhibition:"展示", other:"その他"};
+const GENRE_CLASS = {concert:"g-concert", sports:"g-sports", exhibition:"g-exhibition", other:"g-other"};
+let DATA = null, region = "ALL";
+
+function fmtDay(iso) {
+  const d = new Date(iso + "T00:00:00");
+  const w = "日月火水木金土"[d.getDay()];
+  return `${d.getMonth()+1}/${d.getDate()}（${w}）`;
+}
+function fmtTime(h, m) { return h==null ? "" : `${String(h).padStart(2,"0")}:${String(m||0).padStart(2,"0")}`; }
+
+function render() {
+  const venues = Object.fromEntries(DATA.venues.map(v => [v.key, v]));
+  const evs = DATA.events.filter(e => {
+    if (region === "ALL") return true;
+    const v = venues[e.venueKey];
+    return v && v.region === region;
+  });
+  const byDay = {};
+  for (const e of evs) (byDay[e.date] ||= []).push(e);
+  const days = Object.keys(byDay).sort();
+  const list = document.getElementById("list");
+  if (!days.length) { list.innerHTML = '<div class="empty">該当するイベントがありません</div>'; return; }
+  list.innerHTML = days.map(day => {
+    const items = byDay[day].map(e => {
+      const v = venues[e.venueKey] || {name:e.venueKey, officialUrl:"#"};
+      const t = fmtTime(e.startHour, e.startMinute);
+      return `<div class="ev">
+        <div>
+          <div class="t"><span class="badge ${GENRE_CLASS[e.genre]||"g-other"}">${GENRE_LABEL[e.genre]||"その他"}</span>${e.title}</div>
+          <div class="v">${v.name}${v.officialUrl ? ` ・ <a href="${v.officialUrl}" target="_blank" rel="noopener">公式</a>` : ""}</div>
+        </div>
+        <div class="time">${t}</div>
+      </div>`;
+    }).join("");
+    return `<div class="day"><h2>${fmtDay(day)}</h2>${items}</div>`;
+  }).join("");
+}
+
+function buildFilters() {
+  const regions = ["ALL", ...new Set(DATA.venues.map(v => v.region).filter(Boolean))];
+  const box = document.getElementById("filters");
+  box.innerHTML = regions.map(r =>
+    `<button data-r="${r}" class="${r===region?"on":""}">${r==="ALL"?"すべて":r}</button>`).join("");
+  box.querySelectorAll("button").forEach(b => b.onclick = () => {
+    region = b.dataset.r;
+    box.querySelectorAll("button").forEach(x => x.classList.toggle("on", x===b));
+    render();
+  });
+}
+
+fetch("events_jp.json").then(r => r.json()).then(d => {
+  DATA = d;
+  document.getElementById("gen").textContent = new Date(d.generatedAt).toLocaleString("ja-JP");
+  buildFilters();
+  render();
+}).catch(e => {
+  document.getElementById("list").innerHTML = '<div class="empty">データを読み込めませんでした</div>';
+});
+</script>
+</body>
+</html>
