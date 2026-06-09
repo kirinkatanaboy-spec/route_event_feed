@@ -22,6 +22,8 @@ from . import (
     tokyo_intl_forum,
     osaka_jo_hall,
     festival_hall,
+    pia_arena_mm,
+    cerezo,
     npb_baseball,
 )
 
@@ -49,5 +51,7 @@ ALL_SCRAPERS = [
     tokyo_intl_forum,
     osaka_jo_hall,
     festival_hall,
+    pia_arena_mm,
+    cerezo,
     npb_baseball,
 ]

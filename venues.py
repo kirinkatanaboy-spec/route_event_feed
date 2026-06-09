@@ -139,6 +139,18 @@ SAPPORO_DOME = Venue(
     lat=43.015100, lng=141.409800, region="北海道", big_box=True,
     official_url="https://www.sapporo-dome.co.jp/",
 )
+PIA_ARENA_MM = Venue(
+    key="pia_arena_mm", name="ぴあアリーナMM",
+    lat=35.461300, lng=139.629600, region="神奈川", big_box=True,
+    official_url="https://pia-arena-mm.jp/event/",
+)
+# ヤンマースタジアム長居 と ヨドコウ桜スタジアムは長居公園内で隣接（約150m）。
+# セレッソ大阪のホーム戦をまとめて1会場として扱う（タクシー需要上は同一エリア）。
+NAGAI_STADIUM = Venue(
+    key="nagai_stadium", name="ヤンマースタジアム長居（長居公園）",
+    lat=34.614900, lng=135.517800, region="大阪", big_box=True,
+    official_url="https://www.cerezo.jp/matches/",
+)
 # ─── プロ野球（npb.jp の月別カレンダーから取得） ───────────────────────────
 MEIJI_JINGU = Venue(
     key="meiji_jingu", name="明治神宮野球場",
@@ -170,6 +182,7 @@ ALL_VENUES = [
     NAGOYA_DOME, SAPPORO_DOME,
     K_ARENA, ARIAKE_ARENA, NISSAN_STADIUM, AJINOMOTO_STADIUM,
     BELLUNA_DOME, TOKYO_INTL_FORUM, OSAKA_JO_HALL, FESTIVAL_HALL, IG_ARENA,
+    PIA_ARENA_MM, NAGAI_STADIUM,
     MEIJI_JINGU, YOKOHAMA_STADIUM, ZOZO_MARINE, KOSHIEN,
 ]
 
