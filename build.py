@@ -87,6 +87,28 @@ def sanity_gate(feed: dict, errors: list[str], prev_total: int | None) -> list[s
     return reasons
 
 
+def report_missing_sport_times(feed: dict) -> list[str]:
+    """今後の試合（genre=sports）で開始時刻が欠落しているものを列挙。
+
+    野球・サッカーの試合は公式に開始時刻が必ずあるため、未来の sports で
+    startHour=None は「スクレイパーが時刻抽出に失敗している」静かな兆候。
+    （アプリ側はジャンル別デフォルト時刻で埋めるため誤表示になるが画面に
+    エラーは出ない。＝CIログでしか気付けないので、ここで明示警告する。）
+    過去に PayPay ドームのホークス戦で時刻表記の正規表現がページ改変と
+    逆順だったため全試合 None になった事故の再発防止。
+    """
+    today = _dt.date.today().isoformat()
+    bad: list[str] = []
+    for e in feed.get("events", []):
+        if e.get("genre") != "sports":
+            continue
+        if (e.get("date") or "") < today:
+            continue
+        if e.get("startHour") is None:
+            bad.append(f"{e.get('date')} {e.get('venueKey')} {e.get('title')!r}")
+    return bad
+
+
 def collect():
     events = []
     errors = []
@@ -148,6 +170,13 @@ def main():
 
     if errors:
         print("errors:\n  " + "\n  ".join(errors), file=sys.stderr)
+
+    missing_times = report_missing_sport_times(feed)
+    if missing_times:
+        print(f"[WARN] 開始時刻が欠落した今後の試合 {len(missing_times)} 件"
+              "（スクレイパーの時刻抽出失敗の疑い）:", file=sys.stderr)
+        for m in missing_times:
+            print(f"  - {m}", file=sys.stderr)
 
 
 def render_site(feed: dict) -> str:
